@@ -1,0 +1,145 @@
+@if (showShell()) {
+<div
+  class="shell"
+  [class.shell--overlay]="layout.presentation() === 'overlay'"
+  [class.shell--open]="layout.sidebarOpen()"
+>
+  <aside
+    id="app-sidebar"
+    class="sidebar"
+    [attr.aria-hidden]="layout.sidebarOpen() ? 'false' : 'true'"
+    [attr.inert]="layout.sidebarOpen() ? null : ''"
+  >
+    <div class="brand-lockup">
+      <span class="logo" aria-hidden="true"><app-icon name="sparkles" /></span>
+      <span>
+        <strong>CreatorFi</strong>
+        <small>{{ isCreator() ? 'Creator Studio' : 'Management Suite' }}</small>
+      </span>
+    </div>
+
+    <label class="side-search">
+      <app-icon name="search" size="sm" />
+      <span class="visually-hidden">Search navigation</span>
+      <input
+        type="search"
+        placeholder="Search..."
+        [value]="isCreator() ? creator.sidebarQuery() : management.sidebarQuery()"
+        (input)="onSidebarSearch($event)"
+      />
+    </label>
+
+    <nav aria-label="Primary">
+      @if (isCreator()) {
+        @for (item of creator.nav(); track item.section) {
+          <button
+            type="button"
+            [class.is-active]="creator.section() === item.section"
+            (click)="creator.section.set(item.section); layout.presentation() === 'overlay' && closeOverlay()"
+          >
+            <span class="nav-label"><app-icon [name]="item.icon" /> {{ item.title }}</span>
+            @if (item.badge) { <span class="count">{{ item.badge }}</span> }
+          </button>
+        }
+      } @else {
+        @for (item of management.nav(); track item.title) {
+          <div class="nav-group">
+            <button
+              type="button"
+              [class.is-active]="management.section() === item.section"
+              (click)="management.toggleGroup(item); layout.presentation() === 'overlay' && !item.items && closeOverlay()"
+            >
+              <span class="nav-label"><app-icon [name]="item.icon" /> {{ item.title }}</span>
+              <span class="nav-meta">
+                @if (item.badge) {
+                  <span class="count">{{ item.badge }}</span>
+                }
+                @if (item.items) {
+                  <app-icon name="chevron" size="sm" [class.turned]="management.expanded()[item.title]" />
+                }
+              </span>
+            </button>
+            @if (item.items && management.expanded()[item.title]) {
+              <div class="subnav">
+                @for (child of item.items; track child.title) {
+                  <button type="button" (click)="management.selectChild(item, child.title); layout.presentation() === 'overlay' && closeOverlay()">
+                    {{ child.title }}
+                    @if (child.badge) { <span class="count">{{ child.badge }}</span> }
+                  </button>
+                }
+              </div>
+            }
+          </div>
+        }
+      }
+    </nav>
+
+    <div class="sidebar-foot">
+      @if (!isCreator()) {
+        <button type="button" (click)="signOut()">
+          <span class="nav-label"><app-icon name="lock" /> Sign out</span>
+        </button>
+        <button type="button" (click)="settings()">
+          <span class="nav-label"><app-icon name="settings" /> Settings</span>
+        </button>
+      }
+      <button type="button" (click)="account()">
+        <span class="nav-label">
+          <span class="mini-avatar">{{ accountInitials() }}</span>
+          <span>
+            <strong>{{ accountName() }}</strong>
+            @if (isCreator() && creator.profile().handle) { <small>{{ creator.profile().handle }}</small> }
+          </span>
+        </span>
+        <span class="count">{{ accountPlan() }}</span>
+      </button>
+    </div>
+  </aside>
+
+  @if (layout.presentation() === 'overlay' && layout.sidebarOpen()) {
+    <button type="button" class="backdrop" aria-label="Close sidebar" (click)="closeOverlay()"></button>
+  }
+
+  <div class="workspace">
+    <header class="toolbar">
+      <button
+        #sidebarToggle
+        type="button"
+        class="sidebar-toggle"
+        aria-controls="app-sidebar"
+        [attr.aria-expanded]="layout.sidebarOpen() ? 'true' : 'false'"
+        (click)="toggleSidebar()"
+      >
+        <app-icon name="panel" />
+        <span class="visually-hidden">
+          @if (layout.sidebarOpen()) { Hide sidebar } @else { Show sidebar }
+        </span>
+      </button>
+      <h1>{{ isCreator() ? 'Creator Studio' : 'Management' }}</h1>
+      <div class="toolbar-actions">
+        @if (isCreator()) {
+          <a routerLink="/" class="switch-link">Management view</a>
+          @if (creator.profile().idVerified) {
+            <span class="pill pill--good">ID Verified</span>
+          }
+        } @else {
+          <a routerLink="/creator" class="switch-link">Creator view</a>
+          <button type="button" class="icon-btn" aria-label="Messages" (click)="notify('messages')">
+            <app-icon name="message" />
+          </button>
+        }
+        <button type="button" class="icon-btn bell" aria-label="Notifications" (click)="notify('notifications')">
+          <app-icon name="bell" />
+        </button>
+        <span class="avatar-ring">{{ accountInitials() }}</span>
+      </div>
+    </header>
+    <main class="page">
+      <router-outlet />
+    </main>
+  </div>
+</div>
+} @else {
+  <router-outlet />
+}
+<app-toast-host />

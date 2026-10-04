@@ -1,0 +1,9 @@
+@CreatorFi.Api_HostAddress = http://localhost:5220
+
+GET {{CreatorFi.Api_HostAddress}}/api/workspace
+Accept: application/json
+
+###
+
+GET {{CreatorFi.Api_HostAddress}}/api/creator
+Accept: application/json

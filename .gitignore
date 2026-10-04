@@ -1,0 +1,10 @@
+**/bin/
+**/obj/
+**/.vs/
+**/node_modules/
+**/dist/
+**/.angular/
+*.user
+*.suo
+.DS_Store
+Thumbs.db

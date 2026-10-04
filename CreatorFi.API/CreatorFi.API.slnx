@@ -1,0 +1,5 @@
+<Solution>
+  <Project Path="CreatorFi.API/CreatorFi.API.csproj" />
+  <Project Path="CreatorFi.Common/CreatorFi.Common.csproj" />
+  <Project Path="CreatorFi.Data/CreatorFi.Data.csproj" />
+</Solution>

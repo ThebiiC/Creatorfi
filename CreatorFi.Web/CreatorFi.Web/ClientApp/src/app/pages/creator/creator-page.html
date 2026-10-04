@@ -1,0 +1,431 @@
+<div class="stack">
+  <div class="tabs" role="tablist" aria-label="Creator sections">
+    @for (tab of tabs; track tab.id) {
+      <button type="button" role="tab" [attr.aria-selected]="store.section() === tab.id" [class.is-selected]="store.section() === tab.id" (click)="store.section.set(tab.id)">
+        {{ tab.label }}
+      </button>
+    }
+  </div>
+
+  @switch (store.section()) {
+    @case ('overview') {
+      <app-hero-banner tone="violet" [title]="welcomeTitle()" [subtitle]="'Your ' + store.platform() + ' performance at a glance. Record your numbers, or upgrade to unlock more platforms.'">
+        <span heroEyebrow class="badge badge--glass">{{ store.profile().plan }} plan</span>
+        <div heroActions>
+          <button type="button" class="btn btn--white" (click)="store.section.set('analytics')">View full analytics</button>
+          <button type="button" class="btn btn--ghost-light" (click)="store.selectPlatform('Twitter', twitterLocked())"><app-icon name="plus" size="sm" /> Add a platform</button>
+        </div>
+        @if (store.profile().idVerified) {
+          <div heroAside class="id-card">
+            <span class="cluster"><app-icon name="shield" size="sm" /> Identity verified</span>
+            <strong>ID {{ store.profile().idMasked }}</strong>
+          </div>
+        }
+      </app-hero-banner>
+
+      <section class="stack-tight">
+        <h3 class="muted">Your platform</h3>
+        <div class="cluster">
+          @for (item of store.platforms(); track item.key) {
+            <button type="button" class="btn btn--outline" [class.is-selected]="store.platform() === item.key" [class.locked]="item.locked" (click)="store.selectPlatform(item.key, item.locked)">
+              <app-icon [name]="item.icon" size="sm" />
+              {{ item.key }}
+              @if (item.locked) { <app-icon name="lock" size="sm" /> }
+            </button>
+          }
+        </div>
+      </section>
+
+      <section class="grid-4">
+        <article class="card card--pad stat"><div class="stat__top"><span class="stat__icon"><app-icon name="users" /></span></div><strong>{{ store.activePlatform().followers }}</strong><span>Followers</span></article>
+        <article class="card card--pad stat"><div class="stat__top"><span class="stat__icon"><app-icon name="trend" /></span></div><strong>{{ store.activePlatform().engagement }}%</strong><span>Engagement</span></article>
+        <article class="card card--pad stat"><div class="stat__top"><span class="stat__icon"><app-icon name="eye" /></span></div><strong>{{ store.activePlatform().reach }}</strong><span>Reach (30d)</span></article>
+        <article class="card card--pad stat"><div class="stat__top"><span class="stat__icon"><app-icon name="file" /></span></div><strong>{{ store.activePlatform().posts }}</strong><span>Posts</span></article>
+      </section>
+
+      <section class="grid-2">
+        <article class="card card--pad">
+          <h2 class="block-title">Follower growth</h2>
+          <div class="bars" aria-hidden="true">
+            @for (value of store.activePlatform().growth; track $index) {
+              <span [style.height.%]="value"></span>
+            }
+          </div>
+          <div class="weekdays">
+            @for (day of weekdays; track day) { <span>{{ day }}</span> }
+          </div>
+        </article>
+        <section class="stack-tight">
+          <div class="section-head">
+            <h2 class="block-title">Top posts</h2>
+            <button type="button" class="btn btn--outline btn--sm" (click)="store.postFormOpen.set(true)">Add post</button>
+          </div>
+          <div class="card panel">
+            @for (post of store.posts(); track post.title) {
+              <div class="row">
+                <div>
+                  <p>{{ post.title }}</p>
+                  <p class="muted">{{ post.reach }} reach · {{ post.likes }} likes</p>
+                </div>
+                <strong class="good">{{ post.engagement }}%</strong>
+              </div>
+            } @empty {
+              <div class="empty">
+                <h3>No posts yet</h3>
+                <p class="muted">Add a post to track reach and engagement.</p>
+              </div>
+            }
+          </div>
+        </section>
+      </section>
+    }
+    @case ('analytics') {
+      <app-hero-banner tone="indigo" title="All-platform analytics" subtitle="See every platform in one place. On the Free plan, one platform is unlocked — upgrade to add the rest.">
+        <div heroActions>
+          <button type="button" class="btn btn--white-indigo" (click)="store.upgrade()"><app-icon name="sparkles" size="sm" /> Upgrade</button>
+        </div>
+      </app-hero-banner>
+      <section class="grid-4">
+        @for (item of store.platforms(); track item.key) {
+          <article class="card" [class.locked]="item.locked">
+            <div class="card__head">
+              <div class="spread">
+                <span class="cluster"><app-icon [name]="item.icon" /> <strong>{{ item.key }}</strong></span>
+                @if (item.locked) { <app-icon name="lock" /> } @else { <span class="badge badge--good">Active</span> }
+              </div>
+            </div>
+            <div class="card__body">
+              <div class="grid-2">
+                <div class="metric"><span>Followers</span><strong>{{ item.followers }}</strong></div>
+                <div class="metric"><span>Engagement</span><strong>{{ item.engagement }}%</strong></div>
+                <div class="metric"><span>Reach</span><strong>{{ item.reach }}</strong></div>
+                <div class="metric"><span>Posts</span><strong>{{ item.posts }}</strong></div>
+              </div>
+            </div>
+          </article>
+        }
+      </section>
+      <form class="card card--pad stack-tight" (submit)="savePlatform($event)">
+        <h2 class="block-title">Record {{ store.platform() }} stats</h2>
+        <div class="form-grid">
+          <div class="field"><label for="followers">Followers</label><input id="followers" name="followers" [value]="store.activePlatform().followers" /></div>
+          <div class="field"><label for="engagement">Engagement %</label><input id="engagement" name="engagement" type="number" step="0.1" [value]="store.activePlatform().engagement" /></div>
+          <div class="field"><label for="reach">Reach</label><input id="reach" name="reach" [value]="store.activePlatform().reach" /></div>
+          <div class="field"><label for="posts">Posts</label><input id="posts" name="posts" type="number" [value]="store.activePlatform().posts" /></div>
+        </div>
+        <button type="submit" class="btn">Save stats</button>
+      </form>
+    }
+    @case ('account') {
+      <app-hero-banner tone="violet" title="My Account" [subtitle]="accountSubtitle()">
+        <span heroEyebrow class="badge badge--glass">{{ store.profile().plan }} plan</span>
+        <div heroActions>
+          <button type="button" class="btn btn--white" (click)="store.upgrade()">Upgrade plan</button>
+        </div>
+      </app-hero-banner>
+      <form class="card card--pad stack-tight" (submit)="saveProfile($event)">
+        <h2 class="block-title">Profile</h2>
+        <div class="form-grid">
+          <div class="field"><label for="profile-name">Name</label><input id="profile-name" name="name" required [value]="store.profile().name" /></div>
+          <div class="field"><label for="profile-handle">Handle</label><input id="profile-handle" name="handle" [value]="store.profile().handle" placeholder="@handle" /></div>
+          <div class="field"><label for="profile-location">Location</label><input id="profile-location" name="location" [value]="store.profile().location" /></div>
+          <div class="field"><label for="profile-id">ID reference</label><input id="profile-id" name="id" [value]="store.profile().idMasked" placeholder="Last digits only" /></div>
+        </div>
+        <button type="submit" class="btn">Save profile</button>
+      </form>
+      <section class="grid-4">
+        <article class="card card--pad"><span class="muted">Name</span><strong style="font-size:1.25rem">{{ store.profile().name || '—' }}</strong></article>
+        <article class="card card--pad"><span class="muted">Handle</span><strong style="font-size:1.25rem">{{ store.profile().handle || '—' }}</strong></article>
+        <article class="card card--pad"><span class="muted">Identity</span><strong style="font-size:1.25rem">{{ store.profile().idVerified ? store.profile().idMasked : 'Not verified' }}</strong></article>
+        <article class="card card--pad"><span class="muted">Received / pending</span><strong style="font-size:1.25rem">{{ store.receivedLabel() }}</strong><p class="muted">{{ store.pendingLabel() }} still pending</p></article>
+      </section>
+      <section class="stack-tight">
+        <div class="section-head">
+          <h2>Proof of payment</h2>
+          <button type="button" class="btn btn--outline" (click)="store.paymentFormOpen.set(true)"><app-icon name="plus" size="sm" /> Log payment</button>
+        </div>
+        <div class="card panel table--pay">
+          <div class="table-head"><span>Brand</span><span>Amount</span><span>Date</span><span>Status</span><span class="right">Proof</span></div>
+          @for (payment of store.payments(); track payment.brand + payment.date) {
+            <div class="table-row">
+              <span>{{ payment.brand }} <span class="muted">{{ payment.method }}</span></span>
+              <span>{{ payment.amount }}</span>
+              <span class="muted">{{ payment.date }}</span>
+              <span class="badge" [class]="'badge badge--' + tone(payment.status)">{{ payment.status }}</span>
+              <span class="right">
+                @if (payment.hasProof) {
+                  On file
+                } @else {
+                  <button type="button" class="btn btn--outline btn--sm" (click)="store.markProof(payment.brand, payment.date)">Attach</button>
+                }
+              </span>
+            </div>
+          } @empty {
+            <div class="empty">
+              <h3>No payments logged</h3>
+              <p class="muted">Log brand income so SARS totals stay current.</p>
+            </div>
+          }
+        </div>
+      </section>
+    }
+    @case ('brands') {
+      <app-hero-banner tone="teal" title="Your brands" subtitle="Add the brands you work with, track deliverables, and message them from here.">
+        <div heroActions>
+          <button type="button" class="btn btn--white" (click)="store.brandFormOpen.set(true)"><app-icon name="plus" size="sm" /> Add brand</button>
+        </div>
+      </app-hero-banner>
+      <section class="stack-tight">
+        <div class="section-head">
+          <h2>Due dates</h2>
+          <div class="cluster muted">
+            <span class="cluster"><span class="dot dot--High"></span> High</span>
+            <span class="cluster"><span class="dot dot--Medium"></span> Medium</span>
+            <span class="cluster"><span class="dot dot--Low"></span> Low</span>
+          </div>
+        </div>
+        <div class="calendar">
+          @for (day of weekdays; track day) { <strong>{{ day }}</strong> }
+          @for (day of days; track day) {
+            <button type="button" [class.has-task]="tasksOn(day).length" [attr.aria-label]="'Day ' + day">
+              <span>{{ day }}</span>
+              <span class="cluster">
+                @for (task of tasksOn(day); track task.label) {
+                  <span class="dot" [class]="'dot dot--' + task.importance" [attr.title]="task.label"></span>
+                }
+              </span>
+            </button>
+          }
+        </div>
+      </section>
+      <div class="grid-2">
+        <section class="stack-tight">
+          <h2 class="block-title">Upcoming</h2>
+          <div class="card panel">
+            @for (item of upcoming(); track item.task) {
+              <div class="row">
+                <div class="who">
+                  <span class="dot" [class]="'dot dot--' + item.importance"></span>
+                  <div>
+                    <p>{{ item.task }}</p>
+                    <p class="muted">{{ item.date }}</p>
+                  </div>
+                </div>
+                <span class="badge" [class]="'badge badge--' + (item.importance === 'High' ? 'bad' : item.importance === 'Medium' ? 'warn' : 'good')">{{ item.importance }}</span>
+              </div>
+            } @empty {
+              <div class="empty">
+                <h3>Nothing due</h3>
+                <p class="muted">Open deliverables appear here.</p>
+              </div>
+            }
+          </div>
+        </section>
+        <section class="stack-tight">
+          <h2 class="block-title">How deals work</h2>
+          <article class="card card--pad">
+            <p>Add a brand deal with a deliverable and a due date. The calendar marks that day, and unfinished tasks stay in Upcoming.</p>
+          </article>
+        </section>
+      </div>
+      <section class="stack-tight">
+        <h2 class="block-title">Brands you're working with</h2>
+        <div class="stack-tight">
+          @for (brand of store.brands(); track brand.name) {
+            <article class="card card--pad stack-tight">
+              <div class="spread">
+                <div class="who">
+                  <span class="logo-tile">{{ brand.logo }}</span>
+                  <div>
+                    <h3>{{ brand.name }}</h3>
+                    <p class="muted">{{ brand.status }} · next due {{ brand.nextDue }} · {{ brand.fee }}</p>
+                  </div>
+                </div>
+                <span class="badge" [class]="'badge badge--' + (brand.importance === 'High' ? 'bad' : brand.importance === 'Medium' ? 'warn' : 'good')">{{ brand.importance }}</span>
+              </div>
+              @for (item of brand.deliverables; track item.task) {
+                <label class="check">
+                  <input type="checkbox" [checked]="item.done" (change)="store.toggleDeliverable(brand.name, item.task)" />
+                  <span>{{ item.task }} <span class="muted">· {{ item.due }}</span></span>
+                </label>
+              }
+              <form class="cluster" (submit)="send(brand.name, $event)">
+                <label class="field grow">
+                  <span class="sr-only">Message {{ brand.name }}</span>
+                  <input name="message" placeholder="Write a message" />
+                </label>
+                <button type="submit" class="btn">Send</button>
+              </form>
+            </article>
+          } @empty {
+            <div class="card empty">
+              <h3>No brand deals yet</h3>
+              <p class="muted">Add a brand to track deliverables and payments.</p>
+            </div>
+          }
+        </div>
+      </section>
+    }
+    @case ('sars') {
+      <app-hero-banner tone="teal" title="Tax compliance" subtitle="Track your income, stay ahead of SARS deadlines, and keep your compliance record clean — automatically.">
+        @if (store.compliant()) {
+          <div heroAside class="id-card"><span class="cluster"><app-icon name="check" size="sm" /> Compliant</span></div>
+        } @else {
+          <div heroAside class="id-card"><span class="cluster"><app-icon name="alert" size="sm" /> In progress</span></div>
+        }
+      </app-hero-banner>
+      <section class="grid-4">
+        <article class="card card--pad"><div class="who"><span class="stat__icon" [class]="store.taxpayerRegistered() ? 'stat__icon stat__icon--good' : 'stat__icon stat__icon--amber'"><app-icon [name]="store.taxpayerRegistered() ? 'check' : 'clock'" /></span><div><strong style="font-size:1.4rem">{{ store.taxpayerRegistered() ? 'Yes' : 'No' }}</strong><p class="muted">Registered taxpayer</p></div></div></article>
+        <article class="card card--pad"><div class="who"><span class="stat__icon" [class]="store.provisionalRegistered() ? 'stat__icon stat__icon--good' : 'stat__icon stat__icon--amber'"><app-icon [name]="store.provisionalRegistered() ? 'check' : 'clock'" /></span><div><strong style="font-size:1.4rem">{{ store.provisionalRegistered() ? 'Yes' : 'No' }}</strong><p class="muted">Provisional taxpayer</p></div></div></article>
+        <article class="card card--pad"><div class="who"><span class="stat__icon"><app-icon name="wallet" /></span><div><strong style="font-size:1.4rem">{{ store.receivedLabel() }}</strong><p class="muted">Income logged</p></div></div></article>
+        <article class="card card--pad"><div class="who"><span class="stat__icon stat__icon--amber"><app-icon name="calendar" /></span><div><strong style="font-size:1.4rem">Aug 31</strong><p class="muted">Next return due</p></div></div></article>
+      </section>
+      <section class="grid-2">
+        <article class="card card--pad stack-tight">
+          <h2 class="block-title">Compliance checklist</h2>
+          @for (step of store.steps(); track step.step) {
+            <label class="check">
+              <input type="checkbox" [checked]="step.done" (change)="store.toggleStep(step.step)" />
+              <span>{{ step.step }}</span>
+            </label>
+          }
+        </article>
+        <article class="card card--pad stack-tight">
+          <h2 class="block-title">Why it matters</h2>
+          <p>Brand income is taxable. Keeping proofs of payment and logging expenses makes provisional returns easier and protects the money you have already earned.</p>
+          <div class="note">
+            <strong>VAT registration threshold</strong>
+            <p class="muted">Watch turnover as you approach R1 million. Auto-reporting to SARS is not enabled on the Free plan.</p>
+          </div>
+        </article>
+      </section>
+      <section class="stack-tight">
+        <h2 class="block-title">Learn: be smart about tax</h2>
+        <div class="card panel">
+          @for (course of store.courses(); track course.title) {
+            <div class="row">
+              <div>
+                <p>{{ course.title }}</p>
+                <p class="muted">{{ course.category }} · {{ course.duration }}</p>
+              </div>
+              <div class="cluster">
+                @if (course.tag) { <span class="badge">{{ course.tag }}</span> }
+                <button type="button" class="icon-btn" [attr.aria-label]="'Play ' + course.title" (click)="play(course.title)"><app-icon name="play" /></button>
+              </div>
+            </div>
+          }
+        </div>
+      </section>
+    }
+    @case ('coaching') {
+      <app-hero-banner tone="amber" title="Grow with coaching" subtitle="Personalised coaching plus on-demand courses to level up your content and your business.">
+        <div heroActions>
+          <button type="button" class="btn btn--white-amber" (click)="store.bookOpen.set(true)"><app-icon name="calendar" size="sm" /> Book session</button>
+        </div>
+      </app-hero-banner>
+      <section class="grid-2">
+        @if (store.coaching(); as coaching) {
+        <article class="card">
+          <div class="card__head spread">
+            <h3>Your coaching</h3>
+            <span class="badge badge--warn">{{ coaching.stage }}</span>
+          </div>
+          <div class="card__body">
+            <div class="spread"><span class="muted">Progress</span><strong>{{ coaching.progress }}%</strong></div>
+            <div class="progress" role="progressbar" [attr.aria-valuenow]="coaching.progress" aria-valuemin="0" aria-valuemax="100"><span [style.width.%]="coaching.progress"></span></div>
+            <div class="grid-2">
+              <div class="metric" style="text-align:left"><span>Coach</span><strong>{{ coaching.coach }}</strong></div>
+              <div class="metric" style="text-align:left"><span>Sessions</span><strong>{{ coaching.sessions }}</strong></div>
+            </div>
+            <p class="muted">Next {{ coaching.nextSession }}</p>
+          </div>
+        </article>
+        } @else {
+          <article class="card empty">
+            <h3>No coaching booked</h3>
+            <p class="muted">Book a session and your coach, stage, and next date are saved here.</p>
+          </article>
+        }
+        <article class="card card--pad stack-tight">
+          <h2 class="block-title">Recommended courses</h2>
+          @for (course of store.courses(); track course.title) {
+            <div class="spread">
+              <div>
+                <p>{{ course.title }}</p>
+                <p class="muted">{{ course.duration }}</p>
+              </div>
+              <button type="button" class="btn btn--outline btn--sm" (click)="play(course.title)">Play</button>
+            </div>
+          }
+        </article>
+      </section>
+    }
+  }
+
+  @if (store.postFormOpen()) {
+    <button type="button" class="drawer-backdrop" aria-label="Close post form" (click)="store.postFormOpen.set(false)"></button>
+    <form class="drawer" (submit)="savePost($event)" aria-labelledby="post-title">
+      <h2 id="post-title">Add a post</h2>
+      <div class="field"><label for="post-name">Title</label><input id="post-name" name="title" required /></div>
+      <div class="form-grid">
+        <div class="field"><label for="post-reach">Reach</label><input id="post-reach" name="reach" /></div>
+        <div class="field"><label for="post-likes">Likes</label><input id="post-likes" name="likes" /></div>
+      </div>
+      <div class="field"><label for="post-engagement">Engagement %</label><input id="post-engagement" name="engagement" type="number" step="0.1" /></div>
+      <button type="submit" class="btn btn--block">Add post</button>
+    </form>
+  }
+
+  @if (store.brandFormOpen()) {
+    <button type="button" class="drawer-backdrop" aria-label="Close brand form" (click)="store.brandFormOpen.set(false)"></button>
+    <form class="drawer" (submit)="saveBrand($event)" aria-labelledby="creator-brand-title">
+      <h2 id="creator-brand-title">Add a brand deal</h2>
+      <div class="field"><label for="deal-name">Brand</label><input id="deal-name" name="name" required /></div>
+      <div class="form-grid">
+        <div class="field"><label for="deal-fee">Fee</label><input id="deal-fee" name="fee" placeholder="R0" /></div>
+        <div class="field">
+          <label for="deal-importance">Importance</label>
+          <select id="deal-importance" name="importance">
+            <option>High</option>
+            <option selected>Medium</option>
+            <option>Low</option>
+          </select>
+        </div>
+      </div>
+      <div class="field"><label for="deal-task">Deliverable</label><input id="deal-task" name="task" required /></div>
+      <div class="field"><label for="deal-due">Due date</label><input id="deal-due" name="due" required placeholder="Jun 14" /></div>
+      <button type="submit" class="btn btn--block">Add brand</button>
+    </form>
+  }
+
+  @if (store.paymentFormOpen()) {
+    <button type="button" class="drawer-backdrop" aria-label="Close payment form" (click)="store.paymentFormOpen.set(false)"></button>
+    <form class="drawer" (submit)="savePayment($event)" aria-labelledby="payment-title">
+      <h2 id="payment-title">Log a payment</h2>
+      <div class="field"><label for="pay-brand">Brand</label><input id="pay-brand" name="brand" required /></div>
+      <div class="form-grid">
+        <div class="field"><label for="pay-amount">Amount</label><input id="pay-amount" name="amount" required placeholder="18000" /></div>
+        <div class="field">
+          <label for="pay-status">Status</label>
+          <select id="pay-status" name="status">
+            <option value="pending">Pending</option>
+            <option value="received">Received</option>
+          </select>
+        </div>
+      </div>
+      <div class="field"><label for="pay-method">Method</label><input id="pay-method" name="method" placeholder="EFT" /></div>
+      <button type="submit" class="btn btn--block">Log payment</button>
+    </form>
+  }
+
+  @if (store.bookOpen()) {
+    <button type="button" class="drawer-backdrop" aria-label="Close booking form" (click)="store.bookOpen.set(false)"></button>
+    <form class="drawer" (submit)="saveSession($event)" aria-labelledby="book-title">
+      <h2 id="book-title">Book a session</h2>
+      <div class="field"><label for="session-coach">Coach</label><input id="session-coach" name="coach" required /></div>
+      <div class="field"><label for="session-stage">Stage</label><input id="session-stage" name="stage" placeholder="Content strategy" /></div>
+      <div class="field"><label for="session-next">Next session</label><input id="session-next" name="next" placeholder="Jun 16, 2026" /></div>
+      <button type="submit" class="btn btn--white-amber btn--block">Save session</button>
+    </form>
+  }
+</div>
